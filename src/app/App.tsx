@@ -5,9 +5,117 @@ import {
   Plus, Bell, Leaf, Sparkles, BookOpen, Settings, Home,
   CalendarOff, UserCheck, Waves, X, Pencil,
 } from "lucide-react";
-import { today } from "./data";
-import { useTendApp } from "./hooks/useTendApp";
-import type { JournalEntry, ReminderMode, SafeFood, Screen } from "./types";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Screen =
+  | "onboarding-0" | "onboarding-1" | "onboarding-2" | "onboarding-3"
+  | "home" | "intercept" | "log" | "celebration"
+  | "journal" | "safe-foods" | "settings";
+
+type ReminderMode = "mealtimes" | "elapsed" | null;
+
+interface SafeFood {
+  id: string; name: string; emoji: string; selected: boolean; useCount: number;
+}
+
+interface JournalEntry {
+  id: string;
+  food: string;
+  emoji: string;
+  timestamp: Date;
+  note: string;
+  photoUrl?: string;
+  accentColor: string;
+}
+
+// ─── Seed data ────────────────────────────────────────────────────────────────
+
+const ACCENT_COLORS = ["#F3C9A8", "#C6BCD6", "#B7C4B0", "#F5D5C0", "#D4C5E8"];
+
+const today = new Date(2026, 6, 3); // July 3 2026 (Thursday)
+
+function daysAgo(n: number, h: number, m: number) {
+  const d = new Date(today);
+  d.setDate(d.getDate() - n);
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+const SEED_ENTRIES: JournalEntry[] = [
+  {
+    id: "s1", food: "Yogurt", emoji: "🥣",
+    timestamp: daysAgo(0, 8, 42),
+    note: "Slow morning but I got there.",
+    photoUrl: "https://images.unsplash.com/photo-1704735436097-a24b0f2d22cf?w=600&h=400&fit=crop&auto=format",
+    accentColor: "#F3C9A8",
+  },
+  {
+    id: "s2", food: "Toast", emoji: "🍞",
+    timestamp: daysAgo(0, 13, 15),
+    note: "",
+    photoUrl: "https://images.unsplash.com/photo-1495214783159-3503fd1b572d?w=600&h=400&fit=crop&auto=format",
+    accentColor: "#C6BCD6",
+  },
+  {
+    id: "s3", food: "Banana", emoji: "🍌",
+    timestamp: daysAgo(0, 16, 30),
+    note: "Mid-afternoon, felt okay",
+    accentColor: "#B7C4B0",
+  },
+  {
+    id: "s4", food: "A shake", emoji: "🥤",
+    timestamp: daysAgo(1, 9, 5),
+    note: "",
+    photoUrl: "https://images.unsplash.com/photo-1514995428455-447d4443fa7f?w=600&h=400&fit=crop&auto=format",
+    accentColor: "#F5D5C0",
+  },
+  {
+    id: "s5", food: "Leftovers", emoji: "🍱",
+    timestamp: daysAgo(1, 14, 20),
+    note: "Comfort food kind of day",
+    accentColor: "#D4C5E8",
+  },
+  {
+    id: "s6", food: "Fruit", emoji: "🍎",
+    timestamp: daysAgo(1, 18, 45),
+    note: "",
+    photoUrl: "https://images.unsplash.com/photo-1482508809494-03688cd42e7e?w=600&h=400&fit=crop&auto=format",
+    accentColor: "#B7C4B0",
+  },
+  {
+    id: "s7", food: "Eggs", emoji: "🍳",
+    timestamp: daysAgo(2, 10, 0),
+    note: "Had energy to cook today",
+    accentColor: "#F3C9A8",
+  },
+  {
+    id: "s8", food: "Nuts", emoji: "🥜",
+    timestamp: daysAgo(2, 15, 30),
+    note: "",
+    accentColor: "#C6BCD6",
+  },
+  {
+    id: "s9", food: "Toast", emoji: "🍞",
+    timestamp: daysAgo(3, 8, 15),
+    note: "",
+    photoUrl: "https://images.unsplash.com/photo-1564510715156-793609f9e8b5?w=600&h=400&fit=crop&auto=format",
+    accentColor: "#F5D5C0",
+  },
+];
+
+const INITIAL_FOODS: SafeFood[] = [
+  { id: "1", name: "Banana", emoji: "🍌", selected: true, useCount: 8 },
+  { id: "2", name: "Yogurt", emoji: "🥣", selected: true, useCount: 12 },
+  { id: "3", name: "Toast", emoji: "🍞", selected: true, useCount: 10 },
+  { id: "4", name: "Leftovers", emoji: "🍱", selected: true, useCount: 5 },
+  { id: "5", name: "Nuts", emoji: "🥜", selected: false, useCount: 3 },
+  { id: "6", name: "A shake", emoji: "🥤", selected: true, useCount: 7 },
+  { id: "7", name: "Eggs", emoji: "🍳", selected: false, useCount: 4 },
+  { id: "8", name: "Fruit", emoji: "🍎", selected: true, useCount: 6 },
+];
+
+const TIMES = ["6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM"];
 
 // ─── Spell correction ─────────────────────────────────────────────────────────
 
@@ -316,15 +424,15 @@ function GhostButton({ children, onClick, className = "" }: {
 
 function PhoneShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#DDD0C4] flex items-center justify-center p-4" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <div className="relative w-full max-w-[390px] bg-background flex flex-col overflow-hidden"
-        style={{ height: "844px", borderRadius: "44px", boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.12)" }}>
-        <div className="flex items-center justify-between px-8 pt-4 pb-1 shrink-0">
-          <span className="text-xs font-bold text-foreground/50">9:41</span>
-          <div className="w-4 h-2.5 border border-foreground/30 rounded-sm relative">
-            <div className="absolute inset-[2px] right-[3px] bg-foreground/40 rounded-[1px]" />
-          </div>
-        </div>
+    <div className="bg-background flex justify-center" style={{ minHeight: "100dvh", fontFamily: "'Nunito', sans-serif" }}>
+      <div
+        className="relative w-full max-w-[430px] bg-background flex flex-col overflow-hidden"
+        style={{
+          minHeight: "100dvh",
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
         {children}
       </div>
     </div>
@@ -1010,14 +1118,20 @@ function WeekStrip({ entries, selectedIdx, onSelect }: {
         return (
           <button key={i} onClick={() => onSelect(i)}
             className="flex-1 flex flex-col items-center gap-1.5 py-2 rounded-2xl transition-all"
-            style={isToday || isSelected ? { background: "linear-gradient(135deg, #F3C9A8, #E8967A)" } : {}}>
-            <span className={`text-[11px] font-bold ${isToday || isSelected ? "text-white" : "text-muted-foreground"}`}>
+            style={
+              isSelected
+                ? { background: "linear-gradient(135deg, #F3C9A8, #E8967A)" }
+                : isToday
+                ? { boxShadow: "inset 0 0 0 1.5px rgba(232,150,122,0.55)" }
+                : {}
+            }>
+            <span className={`text-[11px] font-bold ${isSelected ? "text-white" : "text-muted-foreground"}`}>
               {LABELS[(d.getDay() + 6) % 7]}
             </span>
-            <span className={`text-sm font-extrabold ${isToday || isSelected ? "text-white" : "text-foreground"}`}>
+            <span className={`text-sm font-extrabold ${isSelected ? "text-white" : isToday ? "text-primary" : "text-foreground"}`}>
               {d.getDate()}
             </span>
-            <div className={`w-1.5 h-1.5 rounded-full transition-all ${hasMeal ? (isToday || isSelected ? "bg-white/80" : "bg-primary") : "bg-transparent"}`} />
+            <div className={`w-1.5 h-1.5 rounded-full transition-all ${hasMeal ? (isSelected ? "bg-white/80" : "bg-primary") : "bg-transparent"}`} />
           </button>
         );
       })}
@@ -1471,19 +1585,39 @@ function SettingsScreen({ mode, setMode }: { mode: ReminderMode; setMode: (m: Re
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const {
-    screen,
-    reminderMode,
-    setReminderMode,
-    foods,
-    streak,
-    journalEntries,
-    toggleFood,
-    removeFood,
-    addFood,
-    addJournalEntry,
-    go,
-  } = useTendApp();
+  const [screen, setScreen] = useState<Screen>("onboarding-0");
+  const [reminderMode, setReminderMode] = useState<ReminderMode>("elapsed");
+  const [foods, setFoods] = useState<SafeFood[]>(INITIAL_FOODS);
+  const [streak, setStreak] = useState(4);
+  const [lastStreakDate, setLastStreakDate] = useState<string | null>(null);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(SEED_ENTRIES);
+
+  function toggleFood(id: string) {
+    setFoods((fs) => fs.map((f) => (f.id === id ? { ...f, selected: !f.selected } : f)));
+  }
+
+  function removeFood(id: string) {
+    setFoods((fs) => fs.filter((f) => f.id !== id));
+  }
+
+  function addFood(name: string) {
+    setFoods((fs) => [...fs, { id: `c-${Date.now()}`, name, emoji: pickEmoji(name), selected: true, useCount: 0 }]);
+  }
+
+  function addJournalEntry(e: { food: string; emoji: string; note: string; photoUrl?: string }) {
+    const colorIdx = journalEntries.length % ACCENT_COLORS.length;
+    setJournalEntries((prev) => [
+      { id: `j-${Date.now()}`, food: e.food, emoji: e.emoji, timestamp: new Date(), note: e.note, photoUrl: e.photoUrl, accentColor: ACCENT_COLORS[colorIdx] },
+      ...prev,
+    ]);
+    const todayStr = new Date().toDateString();
+    if (lastStreakDate !== todayStr) {
+      setStreak((s) => s + 1);
+      setLastStreakDate(todayStr);
+    }
+  }
+
+  function go(s: Screen) { setScreen(s); }
 
   const mainScreens: Screen[] = ["home", "journal", "safe-foods", "settings"];
 

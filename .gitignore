@@ -1,1 +1,36 @@
-node_modules
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+
+# Vite
+.vite/
+
+# iOS / Capacitor
+ios/App/Pods/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
